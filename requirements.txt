@@ -6,4 +6,4 @@ google-auth==2.29.0
 pandas>=2.1.4
 scipy==1.11.4
 cython==3.0.8
-git+https://github.com/lyst/lightfm/tree/master
+git+https://github.com/lyst/lightfm.git@master#egg=lightfm
