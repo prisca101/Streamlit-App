@@ -388,33 +388,43 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
 
 
         # FEEDBACK SECTION
-        with st.form("recommendation_feedback"):
-            st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+    with st.form("recommendation_feedback"):
+        st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+        
+        # Email collection (optional)
+        email = st.text_input("Email (optional but very much preferred):")
+        
+        # Rating scale
+        rating = st.radio("How are these recommendations?", 
+                        [
+                            "Excellent! My cat approves (and she hates everything) 😾👑", 
+                            "Good! It's like eating a batch of fresh cookies 🍪📖", 
+                            "Fair. Meh. It's okay 😐", 
+                            "Bad. 2/10 would not recommend to my worst enemy 👹", 
+                            "Horrible. I would rather read terms & conditions 📜⚰️"
+                        ])
+        
+        # Detailed feedback
+        feedback_text = st.text_area("What could I improve? (also optional)")
+        
+        # Form submission
+        submitted = st.form_submit_button("Submit Feedback")
+        
+        if submitted:        
+            rating_map = {
+                "Horrible. I would rather read terms & conditions 📜⚰️": 1,
+                "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
+                "Fair. Meh. It's okay 😐": 3,
+                "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
+                "Excellent! My cat approves (and she hates everything) 😾👑": 5
+            }
             
-            # Email collection (optional)
-            email = st.text_input("Email (optional but very much preferred):")
-            
-            # Rating scale
-            rating = st.radio("How are these recommendations?", 
-                            [
-                                "Excellent! My cat approves (and she hates everything) 😾👑", 
-                                "Good! It's like eating a batch of fresh cookies 🍪📖", 
-                                "Fair. Meh. It's okay 😐", 
-                                "Bad. 2/10 would not recommend to my worst enemy 👹", 
-                                "Horrible. I would rather read terms & conditions 📜⚰️"
-                            ])
-            
-            # Detailed feedback
-            feedback_text = st.text_area("What could I improve? (also optional)")
-            
-            # Form submission
-            submitted = st.form_submit_button("Submit Feedback")
-            
-            if submitted:    
-                if save_feedback(
-                    email=email if email else "anonymous",
-                    rating=rating,
-                    feedback_text=feedback_text
-                ):
-                    st.success("🎉 Thanks for your feedback! We'll use this to improve our recommendations.")
-                    st.balloons()
+            numerical_rating = rating_map[rating]
+
+            if save_feedback(
+                email=email if email else "anonymous",
+                rating=numerical_rating,
+                feedback_text=feedback_text
+            ):
+                st.success("🎉 Thank you for your feedback! Have some balloons. You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
+                st.balloons()
