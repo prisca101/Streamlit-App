@@ -10,6 +10,7 @@ import scipy.sparse as sp
 import gspread
 from gspread.exceptions import SpreadsheetNotFound, GSpreadException
 from google.oauth2.service_account import Credentials
+from gspread.exceptions import SpreadsheetNotFound, APIException, GSpreadException
 from datetime import datetime
 
 
@@ -65,30 +66,58 @@ st.divider()
 # Initialize Google Sheets connection
 def init_gsheets():
     try:
+        # Verify credentials loading
+        if 'gcp_service_account' not in st.secrets:
+            st.error("Missing Google Cloud credentials in secrets!")
+            return None
+            
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
+            "https://www.googleapis.com/auth/drive.file"
         ]
+        
+        # Create credentials
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=scope
         )
+        
+        # Authorize client
         client = gspread.authorize(creds)
-        # Debug: List all accessible sheets
-        all_sheets = client.openall()
-        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
-
-        # Try opening by ID instead
-        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
-        sheet = client.open_by_key(sheet_id)
-        st.success(f"Successfully opened sheet: {sheet.title}")
-
-        return sheet.sheet1
-    except SpreadsheetNotFound:
-        st.error("Google Sheet not found. Check the sheet name exists.")
+        st.toast("🔑 Successfully authorized with Google Sheets!", icon="✅")
+        
+        # Debug: Verify sheet access
+        try:
+            sheet = client.open_by_key("115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys")
+            st.toast(f"📖 Found sheet: {sheet.title}", icon="✅")
+            
+            # Access first worksheet
+            worksheet = sheet.get_worksheet(0)
+            st.toast(f"📋 Accessed worksheet: {worksheet.title}", icon="✅")
+            
+            return worksheet
+            
+        except SpreadsheetNotFound:
+            st.error("""
+            🚨 Sheet not found! Verify:
+            1. Sheet ID is correct
+            2. Shared with service account: 
+               """ + st.secrets["gcp_service_account"]["client_email"])
+            return None
+            
+    except APIException as e:
+        st.error(f"""
+        🔥 Google API Error: 
+        {str(e)}
+        Verify API is enabled: https://console.cloud.google.com/apis/library/sheets.googleapis.com
+        """)
         return None
-    except GSpreadException as e:  # General exception catch
-        st.error(f"Google Sheets error: {str(e)}")
+        
+    except Exception as e:
+        st.error(f"""
+        🛑 Unexpected error: 
+        {traceback.format_exc()}
+        """)
         return None
 
 # Feedback saving function
@@ -410,7 +439,10 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
             # Form submission
             submitted = st.form_submit_button("Submit Feedback")
             
-            if submitted:        
+            if submitted:     
+
+                
+       
                 rating_map = {
                     "Horrible. I would rather read terms & conditions 📜⚰️": 1,
                     "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
