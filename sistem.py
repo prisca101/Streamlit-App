@@ -57,10 +57,10 @@ num_users = len(user_id_mapping)
 
 # App layout
 st.title("📖 Book Recommendation System")
-st.markdown("Discover your next favorite book!")
+st.markdown("Discover your next favorite book!  \n" \
+            "Also, please do be aware I've only got data from **1980** to **2005** from the BookCrossing Community. " \
+            "So uh, it probably won't recommend you the latest bestsellers, but rather some classics and (hopefully) hidden gems from that era. Idk tho, I ain't alive back then, so I can't even tell you what was popular at that time.")
 st.divider()
-
-num_recommendations = st.slider("Number of recommendations", 5, 20, 10)
 
 
 # Initialize Google Sheets connection
@@ -76,14 +76,10 @@ def init_gsheets():
             scopes=scope
         )
         client = gspread.authorize(creds)
-        # Debug: List all accessible sheets
-        all_sheets = client.openall()
-        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
 
         # Try opening by ID instead
-        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
+        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"
         sheet = client.open_by_key(sheet_id)
-        st.success(f"Successfully opened sheet: {sheet.title}")
 
         return sheet.sheet1
     except SpreadsheetNotFound:
@@ -118,34 +114,6 @@ def save_feedback(email, rating, feedback_text):
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
         return False
-    
-
-st.markdown("---")
-with st.form("recommendation_feedback"):
-    st.subheader("📝 Help us improve our recommendations!")
-    
-    # Email collection (optional)
-    email = st.text_input("Email (optional but very much preferred):")
-    
-    # Rating scale
-    rating = st.radio("How relevant were these recommendations?", 
-                     ["🤮 Absolutely horrible", "😞 Poor", "😐 Fair", "😀 Good!", "😍 Breathtakingly excellent!"],
-                     horizontal=True)
-    
-    # Detailed feedback
-    feedback_text = st.text_area("What could we improve? (also optional)")
-    
-    # Form submission
-    submitted = st.form_submit_button("Submit Feedback")
-    
-    if submitted:        
-        if save_feedback(
-            email=email if email else "anonymous",
-            rating=rating,
-            feedback_text=feedback_text
-        ):
-            st.success("🎉 Thanks for your feedback! We'll use this to improve our recommendations.")
-            st.balloons()
 
 
 
@@ -185,7 +153,7 @@ st.sidebar.title("User Selection Mode")
 # Radio button to choose between modes
 selection_mode = st.sidebar.radio(
     "Choose input method:",
-    ["Use Cold-Start Sample", "Enter My Own Preferences"],
+    ["Enter My Own Preferences", "Use Cold-Start Sample"],
     index=0
 )
 
@@ -228,6 +196,8 @@ else:
         submitted = st.form_submit_button("Save Preferences")
 
 
+
+num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
 
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
     if selection_mode == "Use Cold-Start Sample":
@@ -358,6 +328,7 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
         recommended_isbns = [isbn_list[idx] for idx in top_indices]
 
         # Display recommendations
+        st.markdown("---")
         st.subheader("🎯 Personalized Recommendations")
         st.divider()
 
@@ -408,3 +379,44 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                         st.success("✨ " + " • ".join(matches))
 
             st.divider()
+        
+
+
+        with st.form("recommendation_feedback"):
+            st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+            
+            # Email collection (optional)
+            email = st.text_input("Email (optional but very much preferred):")
+            
+            # Rating scale
+            rating = st.radio("How are these recommendations?", 
+                            [
+                                "Excellent! My cat approves (and she hates everything) 😾👑", 
+                                "Good! It's like eating a batch of fresh cookies 🍪📖", 
+                                "😐 Fair. Meh. It's okay.", 
+                                "Bad. 2/10 would not recommend to my worst enemy 👹", 
+                                "Horrible. I would rather read terms & conditions 📜⚰️"
+                            ])
+            
+            # Detailed feedback
+            feedback_text = st.text_area("What could I improve? (also optional)")
+            
+            # Form submission
+            submitted = st.form_submit_button("Submit Feedback")
+            
+            if submitted:        
+                rating_map = {
+                    "Horrible. I would rather read terms & conditions 📜⚰️": 1,
+                    "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
+                    "😐 Fair. Meh. It's okay.": 3,
+                    "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
+                    "Excellent! My cat approves (and she hates everything) 😾👑": 5
+                }
+                
+                if save_feedback(
+                    email=email if email else "anonymous",
+                    rating=rating,
+                    feedback_text=feedback_text
+                ):
+                    st.success("🎉 Thank you for your feedback! You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
+                    st.balloons()
