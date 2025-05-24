@@ -50,21 +50,19 @@ user_id_mapping = data['user_id_mapping']
 item_id_mapping = data['item_id_mapping']
 cold_user_ids = data['cold_user_ids']
 test_ratings = data['test_ratings']
-
-
-# At the beginning of your code (where you define user_features_test)
 num_users = len(user_id_mapping)
 
 # App layout
 st.title("📖 Book Recommendation System")
-st.markdown("Discover your next favorite book!")
+st.markdown("Discover your next favorite book!  \n"
+            "Also, please do be aware I've only got data from **1980** to **2005** from the BookCrossing Community. "
+            "So uh, it probably won't recommend you the latest bestsellers, but rather some classics and (hopefully) hidden gems from that era. Idk tho, I ain't alive back then, so I can't even tell you what was popular at that time.  \n"
+            "  \n <b><u>Feedback is at the bottom,</u></b> please help me I need it for my thesis. Or else I will cry. A lot. Like, a lot <i>lot</i>. Like, I will cry so much my tears will flood the entire city and cause a massive flood. So please, help me out here."
+            , unsafe_allow_html=True)
 st.divider()
-
-num_recommendations = st.slider("Number of recommendations", 5, 20, 10)
 
 
 # Initialize Google Sheets connection
-# Updated Google Sheets connection with proper error handling
 def init_gsheets():
     try:
         scope = [
@@ -118,36 +116,6 @@ def save_feedback(email, rating, feedback_text):
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
         return False
-    
-
-st.markdown("---")
-with st.form("recommendation_feedback"):
-    st.subheader("📝 Help us improve our recommendations!")
-    
-    # Email collection (optional)
-    email = st.text_input("Email (optional but very much preferred):")
-    
-    # Rating scale
-    rating = st.radio("How relevant were these recommendations?", 
-                     ["🤮 Absolutely horrible", "😞 Poor", "😐 Fair", "😀 Good!", "😍 Breathtakingly excellent!"],
-                     horizontal=True)
-    
-    # Detailed feedback
-    feedback_text = st.text_area("What could we improve? (also optional)")
-    
-    # Form submission
-    submitted = st.form_submit_button("Submit Feedback")
-    
-    if submitted:        
-        if save_feedback(
-            email=email if email else "anonymous",
-            rating=rating,
-            feedback_text=feedback_text
-        ):
-            st.success("🎉 Thanks for your feedback! We'll use this to improve our recommendations.")
-            st.balloons()
-
-
 
 
 def get_star_rating(rating):
@@ -156,15 +124,34 @@ def get_star_rating(rating):
     else:
         return round(rating / 2)
     
-def display_user_profile(user_id):
-    """Display a compact user profile in the sidebar"""
+        
+
+
+# Add this near the top of your app, after loading assets but before user selection
+st.sidebar.title("User Selection Mode")
+# Radio button to choose between modes
+selection_mode = st.sidebar.radio(
+    "Choose input method:",
+    ["Enter My Own Preferences", "Use Cold-Start Sample"],
+    index=0
+)
+
+if selection_mode == "Use Cold-Start Sample":
+    # Existing cold-user selection
+    selected_user = st.selectbox(
+        "Select a Cold-Start User Sample:",
+        cold_user_ids[17:26]
+    )
+    
+    st.sidebar.divider()
+
     with st.sidebar:
         # Get user data
-        user_data = users_df[users_df['User-ID'] == user_id].iloc[0]
+        user_data = users_df[users_df['User-ID'] == selected_user].iloc[0]
         
         # Profile header with avatar
         st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
-        st.subheader(f"User ID: {user_id}")
+        st.subheader(f"User ID: {selected_user}")
         
         # Basic info
         st.caption(f"📍 {user_data.get('Location', 'Unknown location')}")
@@ -178,28 +165,6 @@ def display_user_profile(user_id):
         with st.expander(f"Top {len(user_data['fav_authors'][:3])} Authors", expanded=False):
             for author in user_data['fav_authors']:  # Show top 3
                 st.markdown(f"- {author}")
-        
-
-# Add this near the top of your app, after loading assets but before user selection
-st.sidebar.title("User Selection Mode")
-# Radio button to choose between modes
-selection_mode = st.sidebar.radio(
-    "Choose input method:",
-    ["Use Cold-Start Sample", "Enter My Own Preferences"],
-    index=0
-)
-
-if selection_mode == "Use Cold-Start Sample":
-    # Existing cold-user selection
-    selected_user = st.selectbox(
-        "Select a Cold-Start User Sample:",
-        cold_user_ids[17:26]
-    )
-    
-    st.sidebar.divider()
-    
-    # Display the selected user's profile
-    display_user_profile(selected_user)
     
 else:
     # Create a form for manual preference input
@@ -212,22 +177,32 @@ else:
 
 
         selected_genres = st.multiselect(
-            "Select your favorite genres:",
+            "Select your favorite genres:  \n(Choose max 3, but you can do more... I think)",
             options=all_genres,
             default=[]
         )
         
+        if len(selected_genres) > 5:
+            st.warning("Now that's just too much, mate. Free will is free will but goddamn.")
+
         # Multi-select for authors
         selected_authors = st.multiselect(
-            "Select your favorite authors:",
+            "Select your favorite authors:  \n(Same energy applies here)",
             options=all_authors,
             default=[]
         )
+
+        if len(selected_authors) > 5:
+            st.warning("No-no-no, that's too many, mate. Do you perhaps have a commitment problem?  \nNo shame in that.")
         
         # Submit button
         submitted = st.form_submit_button("Save Preferences")
 
 
+
+
+# RECOMMENDATION GENERATION
+num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
 
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
     if selection_mode == "Use Cold-Start Sample":
@@ -358,6 +333,7 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
         recommended_isbns = [isbn_list[idx] for idx in top_indices]
 
         # Display recommendations
+        st.markdown("---")
         st.subheader("🎯 Personalized Recommendations")
         st.divider()
 
@@ -408,3 +384,37 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                         st.success("✨ " + " • ".join(matches))
 
             st.divider()
+        
+
+
+        # FEEDBACK SECTION
+        with st.form("recommendation_feedback"):
+            st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+            
+            # Email collection (optional)
+            email = st.text_input("Email (optional but very much preferred):")
+            
+            # Rating scale
+            rating = st.radio("How are these recommendations?", 
+                            [
+                                "Excellent! My cat approves (and she hates everything) 😾👑", 
+                                "Good! It's like eating a batch of fresh cookies 🍪📖", 
+                                "Fair. Meh. It's okay 😐", 
+                                "Bad. 2/10 would not recommend to my worst enemy 👹", 
+                                "Horrible. I would rather read terms & conditions 📜⚰️"
+                            ])
+            
+            # Detailed feedback
+            feedback_text = st.text_area("What could I improve? (also optional)")
+            
+            # Form submission
+            submitted = st.form_submit_button("Submit Feedback")
+            
+            if submitted:    
+                if save_feedback(
+                    email=email if email else "anonymous",
+                    rating=rating,
+                    feedback_text=feedback_text
+                ):
+                    st.success("🎉 Thanks for your feedback! We'll use this to improve our recommendations.")
+                    st.balloons()
