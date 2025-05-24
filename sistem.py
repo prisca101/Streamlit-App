@@ -417,7 +417,7 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                 
                 if save_feedback(
                     email=email if email else "anonymous",
-                    rating=rating,
+                    rating=rating_map,
                     feedback_text=feedback_text
                 ):
                     st.success("🎉 Thank you for your feedback! You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
