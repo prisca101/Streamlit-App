@@ -52,6 +52,9 @@ cold_user_ids = data['cold_user_ids']
 test_ratings = data['test_ratings']
 num_users = len(user_id_mapping)
 
+if 'submitted' not in st.session_state:
+    st.session_state.submitted = False
+
 # App layout
 st.title("📖 Book Recommendation System")
 st.markdown("Discover your next favorite book!  \n"
@@ -204,7 +207,6 @@ else:
 # RECOMMENDATION GENERATION
 num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
 
-
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
     if selection_mode == "Use Cold-Start Sample":
         user_internal_id = user_id_mapping[selected_user]
@@ -249,141 +251,185 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
     # Get all item IDs
     all_item_ids = list(item_id_mapping.keys())
     
+    if selection_mode == "Use Cold-Start Sample":
+        # Get top N items
+        top_items = np.argsort(-scores)[:num_recommendations]
+        recommended_isbns = [all_item_ids[item] for item in top_items]
+        
+        # Get actual interactions from test set
+        actual_books = test_ratings[test_ratings['User-ID'] == selected_user]
+        actual_isbns = actual_books['ISBN'].tolist()
 
-    
-if selection_mode == "Use Cold-Start Sample":
-    # Get top N items
-    top_items = np.argsort(-scores)[:num_recommendations]
-    recommended_isbns = [all_item_ids[item] for item in top_items]
-    
-    # Get actual interactions from test set
-    actual_books = test_ratings[test_ratings['User-ID'] == selected_user]
-    actual_isbns = actual_books['ISBN'].tolist()
-
-    # Calculate overlap between recommendations and actual
-    overlap = set(recommended_isbns) & set(actual_isbns)
-    st.divider()
-    
-    # Metrics row
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Recommendation Accuracy", 
-            f"{len(overlap)}/{len(actual_isbns)} matches",
-            help="Number of recommended books that user actually interacted with in the test set")
-    with col2:
-        st.metric("Recommendation Count", num_recommendations, help="Top 10 recommendations")
-    
-    st.divider()
-    
-    # Main content columns
-    col1, col2 = st.columns(2, gap="large")
-    
-    with col1:
-        st.subheader("📚 Model Recommendations", divider="rainbow")
-        for i, isbn in enumerate(recommended_isbns, 1):
-            book_info = books_df[books_df['ISBN'] == isbn].iloc[0]
-            match_indicator = " ✅" if isbn in overlap else ""
-            
-            # Use expander for each book
-            with st.expander(f"{i}. {book_info['Book-Title']}{match_indicator}", expanded=(i==1)):
-                # Display book cover if available (you'd need this in your data)
-                if pd.notna(book_info.get('Image-URL-L')):
-                    st.image(book_info['Image-URL-L'], width=100)
-                else:
-                    st.image("https://placehold.co/150x200?text=No+Cover", width=100)
-                
-                st.markdown(f"""
-                    **📝 Author**: {book_info['Book-Author']}  
-                    **🏷️ Genres**: {', '.join(book_info['genres']) if isinstance(book_info['genres'], list) else book_info['genres']}  
-                    **📅 Year**: {book_info['Year-Of-Publication']}  
-                    **🏛️ Publisher**: {book_info['Publisher']}
-                """)
-                
-    
-    with col2:
-        st.subheader("📖 Actual Interactions in Testing Set", divider="rainbow")
-        if len(actual_isbns) > 0:
-            for i, isbn in enumerate(actual_isbns, 1):
+        # Calculate overlap between recommendations and actual
+        overlap = set(recommended_isbns) & set(actual_isbns)
+        st.divider()
+        
+        # Metrics row
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Recommendation Accuracy", 
+                f"{len(overlap)}/{len(actual_isbns)} matches",
+                help="Number of recommended books that user actually interacted with in the test set")
+        with col2:
+            st.metric("Recommendation Count", num_recommendations, help="Top 10 recommendations")
+        
+        st.divider()
+        
+        # Main content columns
+        col1, col2 = st.columns(2, gap="large")
+        
+        with col1:
+            st.subheader("📚 Model Recommendations", divider="rainbow")
+            for i, isbn in enumerate(recommended_isbns, 1):
                 book_info = books_df[books_df['ISBN'] == isbn].iloc[0]
-                rating = actual_books[actual_books['ISBN'] == isbn]['Book-Rating'].values[0]
-                if rating == 0:
-                    rating = 5
+                match_indicator = " ✅" if isbn in overlap else ""
                 
-                # Use a card-like container
-                with st.expander(f"{i}. {book_info['Book-Title']}", expanded=(i==1)):       
+                # Use expander for each book
+                with st.expander(f"{i}. {book_info['Book-Title']}{match_indicator}", expanded=(i==1)):
+                    # Display book cover if available (you'd need this in your data)
                     if pd.notna(book_info.get('Image-URL-L')):
                         st.image(book_info['Image-URL-L'], width=100)
                     else:
                         st.image("https://placehold.co/150x200?text=No+Cover", width=100)
-                                
-                    # Visual rating (stars)
-                    stars = "⭐" * get_star_rating(rating)
-                    st.markdown(f"**Rating**: {stars} ({rating}/10)")
                     
                     st.markdown(f"""
-                    **📝 Author**: {book_info['Book-Author']}  
-                    **🏷️ Genres**: {', '.join(book_info['genres']) if isinstance(book_info['genres'], list) else book_info['genres']}  
-                    **📅 Year**: {book_info['Year-Of-Publication']}  
+                        **📝 Author**: {book_info['Book-Author']}  
+                        **🏷️ Genres**: {', '.join(book_info['genres']) if isinstance(book_info['genres'], list) else book_info['genres']}  
+                        **📅 Year**: {book_info['Year-Of-Publication']}  
+                        **🏛️ Publisher**: {book_info['Publisher']}
+                    """)
+                    
+        
+        with col2:
+            st.subheader("📖 Actual Interactions in Testing Set", divider="rainbow")
+            if len(actual_isbns) > 0:
+                for i, isbn in enumerate(actual_isbns, 1):
+                    book_info = books_df[books_df['ISBN'] == isbn].iloc[0]
+                    rating = actual_books[actual_books['ISBN'] == isbn]['Book-Rating'].values[0]
+                    if rating == 0:
+                        rating = 5
+                    
+                    # Use a card-like container
+                    with st.expander(f"{i}. {book_info['Book-Title']}", expanded=(i==1)):       
+                        if pd.notna(book_info.get('Image-URL-L')):
+                            st.image(book_info['Image-URL-L'], width=100)
+                        else:
+                            st.image("https://placehold.co/150x200?text=No+Cover", width=100)
+                                 
+                        # Visual rating (stars)
+                        stars = "⭐" * get_star_rating(rating)
+                        st.markdown(f"**Rating**: {stars} ({rating}/10)")
+                        
+                        st.markdown(f"""
+                        **📝 Author**: {book_info['Book-Author']}  
+                        **🏷️ Genres**: {', '.join(book_info['genres']) if isinstance(book_info['genres'], list) else book_info['genres']}  
+                        **📅 Year**: {book_info['Year-Of-Publication']}  
+                        **🏛️ Publisher**: {book_info['Publisher']}
+                        """)
+            else:
+                st.warning("No recorded interactions for this user in test set")
+
+
+    else:
+        top_indices = np.argsort(-scores)[:num_recommendations]
+        isbn_list = list(item_id_mapping.keys())
+        recommended_isbns = [isbn_list[idx] for idx in top_indices]
+
+        # Display recommendations
+        st.markdown("---")
+        st.subheader("🎯 Personalized Recommendations")
+        st.divider()
+
+        for i, isbn in enumerate(recommended_isbns, 1):
+            book_info = books_df[books_df['ISBN'] == isbn].iloc[0]
+            
+            # Create a card-like container
+            with st.container():
+                col1, col2 = st.columns([1, 4])
+                
+                with col1:
+                    if pd.notna(book_info.get('Image-URL-L')):
+                        st.image(book_info['Image-URL-L'], use_container_width=True)
+                    else:
+                        st.image("https://placehold.co/150x200?text=No+Cover", use_container_width=True)
+                
+                with col2:
+                    # Header with title and position
+                    st.markdown(f"### {i}. {book_info['Book-Title']}")
+                    
+                    # Main book info
+                    st.markdown(f"**📚 Author**: {book_info['Book-Author']}")
+                    
+                    # Format genres
+                    genres = book_info['genres']
+                    if isinstance(genres, list):
+                        genres = ", ".join(genres)
+                    st.markdown(f"**🏷️ Genres**: {genres}")
+                    
+                    # Series information
+                    if book_info['Series'] and book_info['Series'] != "Standalone":
+                        st.markdown(f"**📖 Series**: {book_info['Series']}")
+                    
+                    # Combined year and publisher
+                    st.markdown(f"""
+                    **📅 Published**: {book_info['Year-Of-Publication']}  
                     **🏛️ Publisher**: {book_info['Publisher']}
                     """)
-        else:
-            st.warning("No recorded interactions for this user in test set")
+                    
+                    # Matches highlights
+                    matches = []
+                    if any(genre in selected_genres for genre in book_info['genres']):
+                        matches.append("Genre match!")
+                    if book_info['Book-Author'] in selected_authors:
+                        matches.append("Author match!")
+                    
+                    if matches:
+                        st.success("✨ " + " • ".join(matches))
 
-
-else:
-    top_indices = np.argsort(-scores)[:num_recommendations]
-    isbn_list = list(item_id_mapping.keys())
-    recommended_isbns = [isbn_list[idx] for idx in top_indices]
-
-    # Display recommendations
-    st.markdown("---")
-    st.subheader("🎯 Personalized Recommendations")
-    st.divider()
-
-    for i, isbn in enumerate(recommended_isbns, 1):
-        book_info = books_df[books_df['ISBN'] == isbn].iloc[0]
+            st.divider()
         
-        # Create a card-like container
-        with st.container():
-            col1, col2 = st.columns([1, 4])
-            
-            with col1:
-                if pd.notna(book_info.get('Image-URL-L')):
-                    st.image(book_info['Image-URL-L'], use_container_width=True)
-                else:
-                    st.image("https://placehold.co/150x200?text=No+Cover", use_container_width=True)
-            
-            with col2:
-                # Header with title and position
-                st.markdown(f"### {i}. {book_info['Book-Title']}")
-                
-                # Main book info
-                st.markdown(f"**📚 Author**: {book_info['Book-Author']}")
-                
-                # Format genres
-                genres = book_info['genres']
-                if isinstance(genres, list):
-                    genres = ", ".join(genres)
-                st.markdown(f"**🏷️ Genres**: {genres}")
-                
-                # Series information
-                if book_info['Series'] and book_info['Series'] != "Standalone":
-                    st.markdown(f"**📖 Series**: {book_info['Series']}")
-                
-                # Combined year and publisher
-                st.markdown(f"""
-                **📅 Published**: {book_info['Year-Of-Publication']}  
-                **🏛️ Publisher**: {book_info['Publisher']}
-                """)
-                
-                # Matches highlights
-                matches = []
-                if any(genre in selected_genres for genre in book_info['genres']):
-                    matches.append("Genre match!")
-                if book_info['Book-Author'] in selected_authors:
-                    matches.append("Author match!")
-                
-                if matches:
-                    st.success("✨ " + " • ".join(matches))
 
-        st.divider()
+if selection_mode == "Enter My Own Preferences" or st.session_state.submitted:
+    # FEEDBACK SECTION
+    with st.form("recommendation_feedback"):
+        st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+        
+        # Email collection (optional)
+        email = st.text_input("Email (optional but very much preferred):")
+        
+        # Rating scale
+        rating = st.radio("How are these recommendations?", 
+                        [
+                            "Excellent! My cat approves (and she hates everything) 😾👑", 
+                            "Good! It's like eating a batch of fresh cookies 🍪📖", 
+                            "Fair. Meh. It's okay 😐", 
+                            "Bad. 2/10 would not recommend to my worst enemy 👹", 
+                            "Horrible. I would rather read terms & conditions 📜⚰️"
+                        ])
+        
+        # Detailed feedback
+        feedback_text = st.text_area("What could I improve? (also optional)")
+        
+        # Form submission
+        submitted = st.form_submit_button("Submit Feedback")
+
+        if submitted:
+            st.session_state.submitted = True
+                    
+            rating_map = {
+                "Horrible. I would rather read terms & conditions 📜⚰️": 1,
+                "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
+                "Fair. Meh. It's okay 😐": 3,
+                "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
+                "Excellent! My cat approves (and she hates everything) 😾👑": 5
+            }
+            
+            numerical_rating = rating_map[rating]
+
+            if save_feedback(
+                email=email if email else "anonymous",
+                rating=numerical_rating,
+                feedback_text=feedback_text
+            ):
+                st.success("🎉 Thank you for your feedback! Have some balloons. You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
+                st.balloons()
