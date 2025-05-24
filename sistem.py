@@ -1,14 +1,9 @@
 import streamlit as st
 import joblib
 import numpy as np
-from lightfm import LightFM
 import pandas as pd
-from lightfm.data import Dataset
-from scipy.sparse import csr_matrix
-from scipy.sparse import vstack as sparse_vstack
 import scipy.sparse as sp
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import SpreadsheetNotFound, GSpreadException
 from google.oauth2.service_account import Credentials
 from datetime import datetime
