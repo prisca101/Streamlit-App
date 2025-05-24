@@ -395,7 +395,7 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                             [
                                 "Excellent! My cat approves (and she hates everything) 😾👑", 
                                 "Good! It's like eating a batch of fresh cookies 🍪📖", 
-                                "😐 Fair. Meh. It's okay.", 
+                                "Fair. Meh. It's okay 😐", 
                                 "Bad. 2/10 would not recommend to my worst enemy 👹", 
                                 "Horrible. I would rather read terms & conditions 📜⚰️"
                             ])
@@ -410,15 +410,17 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                 rating_map = {
                     "Horrible. I would rather read terms & conditions 📜⚰️": 1,
                     "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
-                    "😐 Fair. Meh. It's okay.": 3,
+                    "Fair. Meh. It's okay 😐": 3,
                     "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
                     "Excellent! My cat approves (and she hates everything) 😾👑": 5
                 }
                 
+                numerical_rating = rating_map[rating]
+
                 if save_feedback(
                     email=email if email else "anonymous",
-                    rating=rating_map,
+                    rating=numerical_rating,
                     feedback_text=feedback_text
                 ):
-                    st.success("🎉 Thank you for your feedback! You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
+                    st.success("🎉 Thank you for your feedback! Have some balloons. You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
                     st.balloons()
