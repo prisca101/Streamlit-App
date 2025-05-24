@@ -6,3 +6,4 @@ google-auth==2.29.0
 pandas>=2.1.4
 lightfm==1.17
 scipy==1.11.4
+python_version <=3.11
