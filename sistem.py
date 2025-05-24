@@ -10,7 +10,6 @@ import scipy.sparse as sp
 import gspread
 from gspread.exceptions import SpreadsheetNotFound, GSpreadException
 from google.oauth2.service_account import Credentials
-from gspread.exceptions import SpreadsheetNotFound, APIException, GSpreadException
 from datetime import datetime
 
 
@@ -51,73 +50,47 @@ user_id_mapping = data['user_id_mapping']
 item_id_mapping = data['item_id_mapping']
 cold_user_ids = data['cold_user_ids']
 test_ratings = data['test_ratings']
+
+
+# At the beginning of your code (where you define user_features_test)
 num_users = len(user_id_mapping)
 
 # App layout
 st.title("📖 Book Recommendation System")
-st.markdown("Discover your next favorite book!  \n"
-            "Also, please do be aware I've only got data from **1980** to **2005** from the BookCrossing Community. "
-            "So uh, it probably won't recommend you the latest bestsellers, but rather some classics and (hopefully) hidden gems from that era. Idk tho, I ain't alive back then, so I can't even tell you what was popular at that time.  \n"
-            "  \n <b><u>Feedback is at the bottom,</u></b> please help me I need it for my thesis. Or else I will cry. A lot. Like, a lot <i>lot</i>. Like, I will cry so much my tears will flood the entire city and cause a massive flood. So please, help me out here."
-            , unsafe_allow_html=True)
+st.markdown("Discover your next favorite book!")
 st.divider()
+
+num_recommendations = st.slider("Number of recommendations", 5, 20, 10)
 
 
 # Initialize Google Sheets connection
+# Updated Google Sheets connection with proper error handling
 def init_gsheets():
     try:
-        # Verify credentials loading
-        if 'gcp_service_account' not in st.secrets:
-            st.error("Missing Google Cloud credentials in secrets!")
-            return None
-            
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive.file"
+            "https://www.googleapis.com/auth/drive"
         ]
-        
-        # Create credentials
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=scope
         )
-        
-        # Authorize client
         client = gspread.authorize(creds)
-        st.toast("🔑 Successfully authorized with Google Sheets!", icon="✅")
-        
-        # Debug: Verify sheet access
-        try:
-            sheet = client.open_by_key("115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys")
-            st.toast(f"📖 Found sheet: {sheet.title}", icon="✅")
-            
-            # Access first worksheet
-            worksheet = sheet.get_worksheet(0)
-            st.toast(f"📋 Accessed worksheet: {worksheet.title}", icon="✅")
-            
-            return worksheet
-            
-        except SpreadsheetNotFound:
-            st.error("""
-            🚨 Sheet not found! Verify:
-            1. Sheet ID is correct
-            2. Shared with service account: 
-               """ + st.secrets["gcp_service_account"]["client_email"])
-            return None
-            
-    except APIException as e:
-        st.error(f"""
-        🔥 Google API Error: 
-        {str(e)}
-        Verify API is enabled: https://console.cloud.google.com/apis/library/sheets.googleapis.com
-        """)
+        # Debug: List all accessible sheets
+        all_sheets = client.openall()
+        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
+
+        # Try opening by ID instead
+        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
+        sheet = client.open_by_key(sheet_id)
+        st.success(f"Successfully opened sheet: {sheet.title}")
+
+        return sheet.sheet1
+    except SpreadsheetNotFound:
+        st.error("Google Sheet not found. Check the sheet name exists.")
         return None
-        
-    except Exception as e:
-        st.error(f"""
-        🛑 Unexpected error: 
-        {traceback.format_exc()}
-        """)
+    except GSpreadException as e:  # General exception catch
+        st.error(f"Google Sheets error: {str(e)}")
         return None
 
 # Feedback saving function
@@ -145,6 +118,36 @@ def save_feedback(email, rating, feedback_text):
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
         return False
+    
+
+st.markdown("---")
+with st.form("recommendation_feedback"):
+    st.subheader("📝 Help us improve our recommendations!")
+    
+    # Email collection (optional)
+    email = st.text_input("Email (optional but very much preferred):")
+    
+    # Rating scale
+    rating = st.radio("How relevant were these recommendations?", 
+                     ["🤮 Absolutely horrible", "😞 Poor", "😐 Fair", "😀 Good!", "😍 Breathtakingly excellent!"],
+                     horizontal=True)
+    
+    # Detailed feedback
+    feedback_text = st.text_area("What could we improve? (also optional)")
+    
+    # Form submission
+    submitted = st.form_submit_button("Submit Feedback")
+    
+    if submitted:        
+        if save_feedback(
+            email=email if email else "anonymous",
+            rating=rating,
+            feedback_text=feedback_text
+        ):
+            st.success("🎉 Thanks for your feedback! We'll use this to improve our recommendations.")
+            st.balloons()
+
+
 
 
 def get_star_rating(rating):
@@ -153,34 +156,15 @@ def get_star_rating(rating):
     else:
         return round(rating / 2)
     
-        
-
-
-# Add this near the top of your app, after loading assets but before user selection
-st.sidebar.title("User Selection Mode")
-# Radio button to choose between modes
-selection_mode = st.sidebar.radio(
-    "Choose input method:",
-    ["Enter My Own Preferences", "Use Cold-Start Sample"],
-    index=0
-)
-
-if selection_mode == "Use Cold-Start Sample":
-    # Existing cold-user selection
-    selected_user = st.selectbox(
-        "Select a Cold-Start User Sample:",
-        cold_user_ids[17:26]
-    )
-    
-    st.sidebar.divider()
-
+def display_user_profile(user_id):
+    """Display a compact user profile in the sidebar"""
     with st.sidebar:
         # Get user data
-        user_data = users_df[users_df['User-ID'] == selected_user].iloc[0]
+        user_data = users_df[users_df['User-ID'] == user_id].iloc[0]
         
         # Profile header with avatar
         st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
-        st.subheader(f"User ID: {selected_user}")
+        st.subheader(f"User ID: {user_id}")
         
         # Basic info
         st.caption(f"📍 {user_data.get('Location', 'Unknown location')}")
@@ -194,6 +178,28 @@ if selection_mode == "Use Cold-Start Sample":
         with st.expander(f"Top {len(user_data['fav_authors'][:3])} Authors", expanded=False):
             for author in user_data['fav_authors']:  # Show top 3
                 st.markdown(f"- {author}")
+        
+
+# Add this near the top of your app, after loading assets but before user selection
+st.sidebar.title("User Selection Mode")
+# Radio button to choose between modes
+selection_mode = st.sidebar.radio(
+    "Choose input method:",
+    ["Use Cold-Start Sample", "Enter My Own Preferences"],
+    index=0
+)
+
+if selection_mode == "Use Cold-Start Sample":
+    # Existing cold-user selection
+    selected_user = st.selectbox(
+        "Select a Cold-Start User Sample:",
+        cold_user_ids[17:26]
+    )
+    
+    st.sidebar.divider()
+    
+    # Display the selected user's profile
+    display_user_profile(selected_user)
     
 else:
     # Create a form for manual preference input
@@ -206,32 +212,22 @@ else:
 
 
         selected_genres = st.multiselect(
-            "Select your favorite genres:  \n(Choose max 3, but you can do more... I think)",
+            "Select your favorite genres:",
             options=all_genres,
             default=[]
         )
         
-        if len(selected_genres) > 5:
-            st.warning("Now that's just too much, mate. Free will is free will but goddamn.")
-
         # Multi-select for authors
         selected_authors = st.multiselect(
-            "Select your favorite authors:  \n(Same energy applies here)",
+            "Select your favorite authors:",
             options=all_authors,
             default=[]
         )
-
-        if len(selected_authors) > 5:
-            st.warning("No-no-no, that's too many, mate. Do you perhaps have a commitment problem?  \nNo shame in that.")
         
         # Submit button
         submitted = st.form_submit_button("Save Preferences")
 
 
-
-
-# RECOMMENDATION GENERATION
-num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
 
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
     if selection_mode == "Use Cold-Start Sample":
@@ -362,7 +358,6 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
         recommended_isbns = [isbn_list[idx] for idx in top_indices]
 
         # Display recommendations
-        st.markdown("---")
         st.subheader("🎯 Personalized Recommendations")
         st.divider()
 
@@ -413,50 +408,3 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                         st.success("✨ " + " • ".join(matches))
 
             st.divider()
-        
-
-
-        # FEEDBACK SECTION
-        with st.form("recommendation_feedback"):
-            st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
-            
-            # Email collection (optional)
-            email = st.text_input("Email (optional but very much preferred):")
-            
-            # Rating scale
-            rating = st.radio("How are these recommendations?", 
-                            [
-                                "Excellent! My cat approves (and she hates everything) 😾👑", 
-                                "Good! It's like eating a batch of fresh cookies 🍪📖", 
-                                "Fair. Meh. It's okay 😐", 
-                                "Bad. 2/10 would not recommend to my worst enemy 👹", 
-                                "Horrible. I would rather read terms & conditions 📜⚰️"
-                            ])
-            
-            # Detailed feedback
-            feedback_text = st.text_area("What could I improve? (also optional)")
-            
-            # Form submission
-            submitted = st.form_submit_button("Submit Feedback")
-            
-            if submitted:     
-
-                
-       
-                rating_map = {
-                    "Horrible. I would rather read terms & conditions 📜⚰️": 1,
-                    "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
-                    "Fair. Meh. It's okay 😐": 3,
-                    "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
-                    "Excellent! My cat approves (and she hates everything) 😾👑": 5
-                }
-                
-                numerical_rating = rating_map[rating]
-
-                if save_feedback(
-                    email=email if email else "anonymous",
-                    rating=numerical_rating,
-                    feedback_text=feedback_text
-                ):
-                    st.success("🎉 Thank you for your feedback! Have some balloons. You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
-                    st.balloons()
