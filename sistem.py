@@ -76,7 +76,16 @@ def init_gsheets():
             scopes=scope
         )
         client = gspread.authorize(creds)
-        return client.open("Book_Recommendation_Feedback").sheet1
+        # Debug: List all accessible sheets
+        all_sheets = client.openall()
+        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
+
+        # Try opening by ID instead
+        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
+        sheet = client.open_by_key(sheet_id)
+        st.success(f"Successfully opened sheet: {sheet.title}")
+
+        return sheet.sheet1
     except SpreadsheetNotFound:
         st.error("Google Sheet not found. Check the sheet name exists.")
         return None
@@ -129,16 +138,7 @@ with st.form("recommendation_feedback"):
     # Form submission
     submitted = st.form_submit_button("Submit Feedback")
     
-    if submitted:
-        # Map ratings to numerical values
-        rating_map = {
-            "🤮 Horrible": 1,
-            "😞 Poor": 2,
-            "😐 Fair": 3,
-            "😀 Good": 4,
-            "😍 Excellent": 5
-        }
-        
+    if submitted:        
         if save_feedback(
             email=email if email else "anonymous",
             rating=rating,
