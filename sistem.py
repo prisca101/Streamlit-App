@@ -74,10 +74,14 @@ def init_gsheets():
             scopes=scope
         )
         client = gspread.authorize(creds)
+        # Debug: List all accessible sheets
+        all_sheets = client.openall()
+        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
 
         # Try opening by ID instead
-        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"
+        sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
         sheet = client.open_by_key(sheet_id)
+        st.success(f"Successfully opened sheet: {sheet.title}")
 
         return sheet.sheet1
     except SpreadsheetNotFound:
