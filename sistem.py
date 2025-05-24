@@ -52,8 +52,6 @@ cold_user_ids = data['cold_user_ids']
 test_ratings = data['test_ratings']
 num_users = len(user_id_mapping)
 
-if 'submitted' not in st.session_state:
-    st.session_state.submitted = False
 
 # App layout
 st.title("📖 Book Recommendation System")
@@ -77,14 +75,10 @@ def init_gsheets():
             scopes=scope
         )
         client = gspread.authorize(creds)
-        # Debug: List all accessible sheets
-        all_sheets = client.openall()
-        st.write("All accessible sheets:", [sh.title for sh in all_sheets])
 
         # Try opening by ID instead
         sheet_id = "115Ou7SNIoQdBde-jc7uQ7w2jDl9N8wDQfupbAKwQZys"  # Replace with actual ID from URL
         sheet = client.open_by_key(sheet_id)
-        st.success(f"Successfully opened sheet: {sheet.title}")
 
         return sheet.sheet1
     except SpreadsheetNotFound:
@@ -389,10 +383,12 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
             st.divider()
         
 
-if selection_mode == "Enter My Own Preferences" or st.session_state.submitted:
+
+
+if selection_mode == "Enter My Own Preferences":
     # FEEDBACK SECTION
     with st.form("recommendation_feedback"):
-        st.markdown("#### 📝 Please help I need your feedback. I'm begging you pls.")
+        st.markdown("#### 📝 Feedback time! Reward: Being a hero cause you saved this poor student from failing")
         
         # Email collection (optional)
         email = st.text_input("Email (optional but very much preferred):")
@@ -403,7 +399,7 @@ if selection_mode == "Enter My Own Preferences" or st.session_state.submitted:
                             "Excellent! My cat approves (and she hates everything) 😾👑", 
                             "Good! It's like eating a batch of fresh cookies 🍪📖", 
                             "Fair. Meh. It's okay 😐", 
-                            "Bad. 2/10 would not recommend to my worst enemy 👹", 
+                            "Bad. 2/10 would not recommend upon my worst enemy 👹", 
                             "Horrible. I would rather read terms & conditions 📜⚰️"
                         ])
         
@@ -414,7 +410,6 @@ if selection_mode == "Enter My Own Preferences" or st.session_state.submitted:
         submitted = st.form_submit_button("Submit Feedback")
 
         if submitted:
-            st.session_state.submitted = True
                     
             rating_map = {
                 "Horrible. I would rather read terms & conditions 📜⚰️": 1,
