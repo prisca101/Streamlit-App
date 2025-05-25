@@ -379,8 +379,6 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                     
                     if matches:
                         st.success("✨ " + " • ".join(matches))
-
-            st.divider()
         
 
 
