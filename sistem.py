@@ -200,6 +200,7 @@ else:
 
 # RECOMMENDATION GENERATION
 num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
+st.divider()
 
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
     if selection_mode == "Use Cold-Start Sample":
@@ -330,7 +331,6 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
         recommended_isbns = [isbn_list[idx] for idx in top_indices]
 
         # Display recommendations
-        st.markdown("---")
         st.subheader("🎯 Personalized Recommendations")
         st.divider()
 
@@ -379,10 +379,12 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
                     
                     if matches:
                         st.success("✨ " + " • ".join(matches))
+
+            st.divider()
         
 
 
-st.divider()
+
 if selection_mode == "Enter My Own Preferences":
     # FEEDBACK SECTION
     with st.form("recommendation_feedback"):
