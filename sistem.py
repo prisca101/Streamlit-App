@@ -202,8 +202,6 @@ else:
 num_recommendations = st.slider("Number of recommendations", 5, 20, 5)
 
 if st.button("Generate Recommendations", type="primary", use_container_width=True):
-    st.divider()
-    
     if selection_mode == "Use Cold-Start Sample":
         user_internal_id = user_id_mapping[selected_user]
         current_user_features = user_features_test[user_internal_id]
@@ -388,6 +386,7 @@ if st.button("Generate Recommendations", type="primary", use_container_width=Tru
 
 
 if selection_mode == "Enter My Own Preferences":
+    st.divider()
     # FEEDBACK SECTION
     with st.form("recommendation_feedback"):
         st.markdown("#### 📝 Feedback time! Reward: Being a hero cause you saved this poor student from failing")
