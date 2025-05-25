@@ -58,7 +58,7 @@ st.title("📖 Book Recommendation System")
 st.markdown("Discover your next favorite book!  \n"
             "Also, please do be aware I've only got data from **1980** to **2005** from the BookCrossing Community. "
             "So uh, it probably won't recommend you the latest bestsellers, but rather some classics and (hopefully) hidden gems from that era. Idk tho, I ain't alive back then, so I can't even tell you what was popular at that time.  \n"
-            "  \n <b><u>Feedback is at the bottom,</u></b> please help me I need it for my thesis. Or else I will cry. A lot. Like, a lot <i>lot</i>. Like, I will cry so much my tears will flood the entire city and cause a massive flood. So please, help me out here."
+            "  \n <b><u>Feedback is at the bottom,</u></b> please help me I need it for my thesis. Or else I will cry. A lot. Like, a lot <i>lot</i>. Like, I will cry so much my tears will flood entire cities and summon tsunamis. So please, help me out here."
             , unsafe_allow_html=True)
 st.divider()
 
@@ -387,7 +387,7 @@ if selection_mode == "Enter My Own Preferences":
     st.divider()
     # FEEDBACK SECTION
     with st.form("recommendation_feedback"):
-        st.markdown("#### 📝 Feedback time! Reward: Being a hero cause you saved this poor student from failing")
+        st.markdown("#### 📝 Feedback time!")
         
         # Email collection (optional)
         email = st.text_input("Email (optional but very much preferred):")
