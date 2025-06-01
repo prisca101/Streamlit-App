@@ -56,9 +56,7 @@ num_users = len(user_id_mapping)
 # App layout
 st.title("📖 Book Recommendation System")
 st.markdown("Discover your next favorite book!  \n"
-            "Also, please do be aware I've only got data from **1980** to **2005** from the BookCrossing Community. "
-            "So uh, it probably won't recommend you the latest bestsellers, but rather some classics and (hopefully) hidden gems from that era. Idk tho, I ain't alive back then, so I can't even tell you what was popular at that time.  \n"
-            "  \n <b><u>Feedback is at the bottom,</u></b> please help me I need it for my thesis. Or else I will cry. A lot. Like, a lot <i>lot</i>. Like, I will cry so much my tears will flood entire cities and summon tsunamis. So please, help me out here."
+            
             , unsafe_allow_html=True)
 st.divider()
 
@@ -174,23 +172,23 @@ else:
 
 
         selected_genres = st.multiselect(
-            "Select your favorite genres:  \n(Choose max 3, but you can do more... I think)",
+            "Select your favorite genres:  \n(Max. 3)",
             options=all_genres,
             default=[]
         )
         
-        if len(selected_genres) > 5:
-            st.warning("Now that's just too much, mate. Free will is free will but goddamn.")
+        if len(selected_genres) > 3:
+            st.warning("Choose max. 3")
 
         # Multi-select for authors
         selected_authors = st.multiselect(
-            "Select your favorite authors:  \n(Same energy applies here)",
+            "Select your favorite authors:  \n(Max. 3)",
             options=all_authors,
             default=[]
         )
 
-        if len(selected_authors) > 5:
-            st.warning("No-no-no, that's too many, mate. Do you perhaps have a commitment problem?  \nNo shame in that.")
+        if len(selected_authors) > 3:
+            st.warning("Choose max. 3")
         
         # Submit button
         submitted = st.form_submit_button("Save Preferences")
@@ -387,7 +385,7 @@ if selection_mode == "Enter My Own Preferences":
     st.divider()
     # FEEDBACK SECTION
     with st.form("recommendation_feedback"):
-        st.markdown("#### 📝 Feedback time!")
+        st.markdown("#### 📝 Feedback for the recommendations")
         
         # Email collection (optional)
         email = st.text_input("Email (optional but very much preferred):")
@@ -395,11 +393,11 @@ if selection_mode == "Enter My Own Preferences":
         # Rating scale
         rating = st.radio("How are these recommendations?", 
                         [
-                            "Excellent! My cat approves (and she hates everything) 😾👑", 
-                            "Good! It's like eating a batch of fresh cookies 🍪📖", 
-                            "Fair. Meh. It's okay 😐", 
-                            "Bad. 2/10 would not recommend upon my worst enemy 👹", 
-                            "Horrible. I would rather read terms & conditions 📜⚰️"
+                            "Excellent!", 
+                            "Good!", 
+                            "Fair.", 
+                            "Bad.", 
+                            "Horrible."
                         ])
         
         # Detailed feedback
@@ -411,11 +409,11 @@ if selection_mode == "Enter My Own Preferences":
         if submitted:
                     
             rating_map = {
-                "Horrible. I would rather read terms & conditions 📜⚰️": 1,
-                "Bad. 2/10 would not recommend to my worst enemy 👹": 2,
-                "Fair. Meh. It's okay 😐": 3,
-                "Good! It's like eating a batch of fresh cookies 🍪📖": 4,
-                "Excellent! My cat approves (and she hates everything) 😾👑": 5
+                "Horrible.": 1,
+                "Bad.": 2,
+                "Fair.": 3,
+                "Good!": 4,
+                "Excellent!": 5
             }
             
             numerical_rating = rating_map[rating]
@@ -425,5 +423,5 @@ if selection_mode == "Enter My Own Preferences":
                 rating=numerical_rating,
                 feedback_text=feedback_text
             ):
-                st.success("🎉 Thank you for your feedback! Have some balloons. You probably saved my thesis. Or destroy it. Please don't destroy my thesis I will cry.")
+                st.success("🎉 Thank you for your feedback!")
                 st.balloons()
