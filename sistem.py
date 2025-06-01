@@ -135,7 +135,7 @@ if selection_mode == "Use Cold-Start Sample":
     # Existing cold-user selection
     selected_user = st.selectbox(
         "Select a Cold-Start User Sample:",
-        cold_user_ids[17:26]
+        cold_user_ids[0:10]
     )
     
     st.sidebar.divider()
