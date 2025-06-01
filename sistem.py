@@ -388,10 +388,10 @@ if selection_mode == "Enter My Own Preferences":
         st.markdown("#### 📝 Feedback for the recommendations")
         
         # Email collection (optional)
-        email = st.text_input("Email (optional but very much preferred):")
+        email = st.text_input("Email (optional but preferred):")
         
         # Rating scale
-        rating = st.radio("How are these recommendations?", 
+        rating = st.radio("How are these recommendations? (Is it relevant to you?)", 
                         [
                             "Excellent!", 
                             "Good!", 
@@ -401,7 +401,7 @@ if selection_mode == "Enter My Own Preferences":
                         ])
         
         # Detailed feedback
-        feedback_text = st.text_area("What could I improve? (also optional)")
+        feedback_text = st.text_area("What could I improve? (optional)")
         
         # Form submission
         submitted = st.form_submit_button("Submit Feedback")
