@@ -56,7 +56,7 @@ num_users = len(user_id_mapping)
 # App layout
 st.title("📖 Book Recommendation System")
 st.markdown("Discover your next favorite book!  \n"
-            "Please do be aware I've only got data from **1980** to **2005** from BookCrossing Community, so I won't recommend you the latest bestsellers, but hopefully you can still find some great books or hidden gems from that era!  \n"
+            "Please do be aware I've only got data from **1980** to **2005** from BookCrossing Community, so I can't recommend you the latest bestsellers, but hopefully you can still find some great books or hidden gems from that era!  \n"
             "The feedback you give will be kept purely for academical purposes."
             
             , unsafe_allow_html=True)
